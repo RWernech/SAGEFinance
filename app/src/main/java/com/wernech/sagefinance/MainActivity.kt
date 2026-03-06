@@ -17,8 +17,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.wernech.sagefinance.data.BiometricHelper
+import com.wernech.sagefinance.data.RetrofitClient
+import com.wernech.sagefinance.data.SyncWorker
+import com.wernech.sagefinance.data.TransactionRepository
 import com.wernech.sagefinance.data.UserPreferences
+import com.wernech.sagefinance.data.database.AppDatabase
 import com.wernech.sagefinance.ui.*
 import com.wernech.sagefinance.ui.theme.SAGEFinanceTheme
 import kotlinx.coroutines.flow.first
@@ -30,16 +38,27 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         userPreferences = UserPreferences(this)
         
+        val database = AppDatabase.getDatabase(this)
+        val repository = TransactionRepository(RetrofitClient.api, database.transactionDao())
+
+        // Dispara a sincronização em background toda vez que o app abre
+        val syncConstraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(syncConstraints)
+            .build()
+        WorkManager.getInstance(this).enqueue(syncRequest)
+
         enableEdgeToEdge()
         setContent {
             val viewModel: MainViewModel = viewModel(
-                factory = MainViewModelFactory(userPreferences)
+                factory = MainViewModelFactory(userPreferences, repository)
             )
             
             val uiState by viewModel.uiState.collectAsState()
             val isAuthenticated by viewModel.isAuthenticated.collectAsState()
             val currentUserName by viewModel.currentUserName.collectAsState()
-            val currentUserEmail by viewModel.currentUserEmail.collectAsState()
             
             var isCheckingAuth by remember { mutableStateOf(true) }
 

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,7 +31,6 @@ fun TransactionListScreen(
     onTransactionClick: (Transaction) -> Unit,
     onDeleteTransaction: (String) -> Unit
 ) {
-    // Otimização: Filtramos e calculamos apenas quando a lista ou os filtros mudam
     val filteredTransactions = remember(transactions, selectedMonth, selectedYear) {
         transactions.filter {
             val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
@@ -84,7 +84,7 @@ fun TransactionListScreen(
             ) {
                 items(
                     items = sortedTransactions,
-                    key = { it.id } // Importante para performance do LazyColumn
+                    key = { it.id }
                 ) { transaction ->
                     TransactionItem(
                         transaction = transaction,
@@ -146,11 +146,23 @@ fun TransactionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = transaction.description,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = transaction.description,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    // Ícone de "Não Sincronizado" se necessário
+                    if (!transaction.isSynced) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = "Não sincronizado",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
                 Text(
                     text = "${transaction.category.label} • ${transaction.paymentMethod.label} • $formattedDate",
                     style = MaterialTheme.typography.bodySmall

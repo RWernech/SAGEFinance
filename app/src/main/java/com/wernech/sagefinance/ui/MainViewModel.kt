@@ -3,12 +3,14 @@ package com.wernech.sagefinance.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wernech.sagefinance.data.RetrofitClient
+import com.wernech.sagefinance.data.TransactionRepository
 import com.wernech.sagefinance.data.UserPreferences
 import com.wernech.sagefinance.model.Transaction
 import com.wernech.sagefinance.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 sealed class MainUiState {
@@ -18,7 +20,10 @@ sealed class MainUiState {
     data class Error(val message: String) : MainUiState()
 }
 
-class MainViewModel(private val userPreferences: UserPreferences) : ViewModel() {
+class MainViewModel(
+    private val userPreferences: UserPreferences,
+    private val repository: TransactionRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -42,11 +47,8 @@ class MainViewModel(private val userPreferences: UserPreferences) : ViewModel() 
     fun loadTransactions(email: String) {
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading
-            try {
-                val response = RetrofitClient.api.getTransactions(email)
-                _uiState.value = MainUiState.Success(response)
-            } catch (e: Exception) {
-                _uiState.value = MainUiState.Error("Erro ao carregar transações")
+            repository.getTransactions(email).collectLatest { transactions ->
+                _uiState.value = MainUiState.Success(transactions)
             }
         }
     }
@@ -86,8 +88,7 @@ class MainViewModel(private val userPreferences: UserPreferences) : ViewModel() 
         viewModelScope.launch {
             try {
                 val transactionWithUser = transaction.copy(userEmail = _currentUserEmail.value)
-                RetrofitClient.api.saveTransaction(transactionWithUser)
-                _currentUserEmail.value?.let { loadTransactions(it) }
+                repository.saveTransaction(transactionWithUser)
                 onSuccess()
             } catch (e: Exception) {
                 onError("Erro ao salvar")
@@ -98,8 +99,7 @@ class MainViewModel(private val userPreferences: UserPreferences) : ViewModel() 
     fun deleteTransaction(id: String, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                RetrofitClient.api.deleteTransaction(id)
-                _currentUserEmail.value?.let { loadTransactions(it) }
+                repository.deleteTransaction(id)
             } catch (e: Exception) {
                 onError("Erro ao excluir")
             }
@@ -107,10 +107,13 @@ class MainViewModel(private val userPreferences: UserPreferences) : ViewModel() 
     }
 
     fun logout() {
-        userPreferences.clear()
-        _currentUserEmail.value = null
-        _currentUserName.value = null
-        _isAuthenticated.value = false
-        _uiState.value = MainUiState.Idle
+        viewModelScope.launch {
+            repository.clearAll()
+            userPreferences.clear()
+            _currentUserEmail.value = null
+            _currentUserName.value = null
+            _isAuthenticated.value = false
+            _uiState.value = MainUiState.Idle
+        }
     }
 }

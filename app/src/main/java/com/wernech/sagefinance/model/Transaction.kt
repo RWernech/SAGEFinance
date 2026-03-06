@@ -1,5 +1,7 @@
 package com.wernech.sagefinance.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import java.util.UUID
 
 enum class TransactionType(val label: String) {
@@ -22,7 +24,9 @@ enum class PaymentMethod(val label: String) {
     DEBIT("Débito")
 }
 
+@Entity(tableName = "transactions")
 data class Transaction(
+    @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     val description: String,
     val amount: Double,
@@ -30,5 +34,6 @@ data class Transaction(
     val type: TransactionType,
     val category: TransactionCategory,
     val paymentMethod: PaymentMethod,
-    val userEmail: String? = null // Para vincular o gasto a um usuário
+    val userEmail: String? = null,
+    val isSynced: Boolean = true // Flag para controle de sincronização
 )
