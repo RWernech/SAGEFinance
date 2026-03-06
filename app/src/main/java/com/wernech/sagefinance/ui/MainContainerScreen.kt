@@ -30,7 +30,7 @@ fun MainContainerScreen(
 
     val pagerState = rememberPagerState(pageCount = { 2 })
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Surface(tonalElevation = 2.dp) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
