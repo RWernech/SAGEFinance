@@ -30,17 +30,33 @@ fun TransactionListScreen(
     onTransactionClick: (Transaction) -> Unit,
     onDeleteTransaction: (String) -> Unit
 ) {
-    val filteredTransactions = transactions.filter {
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        cal.timeInMillis = it.date
-        val monthMatch = if (selectedMonth == -1) true else cal.get(Calendar.MONTH) == selectedMonth
-        monthMatch && cal.get(Calendar.YEAR) == selectedYear
+    // Otimização: Filtramos e calculamos apenas quando a lista ou os filtros mudam
+    val filteredTransactions = remember(transactions, selectedMonth, selectedYear) {
+        transactions.filter {
+            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            cal.timeInMillis = it.date
+            val monthMatch = if (selectedMonth == -1) true else cal.get(Calendar.MONTH) == selectedMonth
+            monthMatch && cal.get(Calendar.YEAR) == selectedYear
+        }
     }
 
-    val totalIncome = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val totalExpense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-    val totalInvested = filteredTransactions.filter { it.type == TransactionType.INVESTMENT }.sumOf { it.amount }
-    val balance = totalIncome - totalExpense - totalInvested
+    val summary = remember(filteredTransactions) {
+        val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+        val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val invested = filteredTransactions.filter { it.type == TransactionType.INVESTMENT }.sumOf { it.amount }
+        val balance = income - expense - invested
+        
+        object {
+            val totalIncome = income
+            val totalExpense = expense
+            val totalInvested = invested
+            val totalBalance = balance
+        }
+    }
+
+    val sortedTransactions = remember(filteredTransactions) {
+        filteredTransactions.sortedByDescending { it.date }
+    }
 
     Scaffold(
         floatingActionButton = {
@@ -55,10 +71,10 @@ fun TransactionListScreen(
                 .padding(padding)
         ) {
             SummaryHeader(
-                income = totalIncome,
-                expense = totalExpense,
-                invested = totalInvested,
-                balance = balance
+                income = summary.totalIncome,
+                expense = summary.totalExpense,
+                invested = summary.totalInvested,
+                balance = summary.totalBalance
             )
 
             LazyColumn(
@@ -66,8 +82,10 @@ fun TransactionListScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val sortedTransactions = filteredTransactions.sortedByDescending { it.date }
-                items(sortedTransactions) { transaction ->
+                items(
+                    items = sortedTransactions,
+                    key = { it.id } // Importante para performance do LazyColumn
+                ) { transaction ->
                     TransactionItem(
                         transaction = transaction,
                         onClick = { onTransactionClick(transaction) },
@@ -85,24 +103,32 @@ fun TransactionItem(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val amountColor = when (transaction.type) {
-        TransactionType.INCOME -> Color(0xFF4CAF50)
-        TransactionType.EXPENSE -> Color(0xFFF44336)
-        TransactionType.INVESTMENT -> Color(0xFF2196F3)
-    }
-
-    val amountPrefix = when (transaction.type) {
-        TransactionType.INCOME -> "+"
-        TransactionType.EXPENSE -> "-"
-        TransactionType.INVESTMENT -> ""
-    }
-
-    val dateFormatter = remember {
-        SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
+    val amountColor = remember(transaction.type) {
+        when (transaction.type) {
+            TransactionType.INCOME -> Color(0xFF4CAF50)
+            TransactionType.EXPENSE -> Color(0xFFF44336)
+            TransactionType.INVESTMENT -> Color(0xFF2196F3)
         }
     }
-    val formattedDate = dateFormatter.format(Date(transaction.date))
+
+    val amountPrefix = remember(transaction.type) {
+        when (transaction.type) {
+            TransactionType.INCOME -> "+"
+            TransactionType.EXPENSE -> "-"
+            TransactionType.INVESTMENT -> ""
+        }
+    }
+
+    val formattedDate = remember(transaction.date) {
+        val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        dateFormatter.format(Date(transaction.date))
+    }
+
+    val formattedAmount = remember(transaction.amount) {
+        NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(transaction.amount)
+    }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -132,7 +158,7 @@ fun TransactionItem(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$amountPrefix ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(transaction.amount)}",
+                    text = "$amountPrefix $formattedAmount",
                     fontWeight = FontWeight.Bold,
                     color = amountColor
                 )
@@ -205,10 +231,14 @@ fun SummaryHeader(
 
 @Composable
 fun SummaryItem(label: String, value: Double, color: Color, modifier: Modifier) {
+    val formattedValue = remember(value) {
+        NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
+    }
+    
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
         Text(
-            text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value),
+            text = formattedValue,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = color,

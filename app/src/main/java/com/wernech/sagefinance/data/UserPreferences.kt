@@ -1,38 +1,60 @@
 package com.wernech.sagefinance.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-private val Context.dataStore by preferencesDataStore(name = "user_prefs")
+class UserPreferences(context: Context) {
+    
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-class UserPreferences(private val context: Context) {
+    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "secure_user_prefs",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    // Usamos StateFlow para manter a compatibilidade com a UI que espera um Flow
+    private val _userEmail = MutableStateFlow(sharedPreferences.getString(KEY_USER_EMAIL, null))
+    val userEmail: Flow<String?> = _userEmail.asStateFlow()
+
+    private val _userName = MutableStateFlow(sharedPreferences.getString(KEY_USER_NAME, null))
+    val userName: Flow<String?> = _userName.asStateFlow()
+
+    private val _userToken = MutableStateFlow(sharedPreferences.getString(KEY_USER_TOKEN, null))
+    val userToken: Flow<String?> = _userToken.asStateFlow()
+
+    fun saveSession(email: String, name: String, token: String = "") {
+        sharedPreferences.edit().apply {
+            putString(KEY_USER_EMAIL, email)
+            putString(KEY_USER_NAME, name)
+            putString(KEY_USER_TOKEN, token)
+            apply()
+        }
+        // Notifica os flows
+        _userEmail.value = email
+        _userName.value = name
+        _userToken.value = token
+    }
+
+    fun clear() {
+        sharedPreferences.edit().clear().apply()
+        _userEmail.value = null
+        _userName.value = null
+        _userToken.value = null
+    }
+
     companion object {
-        private val USER_EMAIL = stringPreferencesKey("user_email")
-        private val USER_NAME = stringPreferencesKey("user_name")
-        private val USER_TOKEN = stringPreferencesKey("user_token")
-    }
-
-    val userEmail: Flow<String?> = context.dataStore.data.map { it[USER_EMAIL] }
-    val userName: Flow<String?> = context.dataStore.data.map { it[USER_NAME] }
-    val userToken: Flow<String?> = context.dataStore.data.map { it[USER_TOKEN] }
-
-    suspend fun saveSession(email: String, name: String, token: String = "") {
-        context.dataStore.edit { preferences ->
-            preferences[USER_EMAIL] = email
-            preferences[USER_NAME] = name
-            preferences[USER_TOKEN] = token
-        }
-    }
-
-    suspend fun clear() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(USER_EMAIL)
-            preferences.remove(USER_NAME)
-            preferences.remove(USER_TOKEN)
-        }
+        private const val KEY_USER_EMAIL = "user_email"
+        private const val KEY_USER_NAME = "user_name"
+        private const val KEY_USER_TOKEN = "user_token"
     }
 }
