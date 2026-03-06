@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +24,8 @@ fun MainContainerScreen(
     transactions: List<Transaction>,
     onAddTransactionClick: () -> Unit,
     onTransactionClick: (Transaction) -> Unit,
-    onDeleteTransaction: (String) -> Unit
+    onDeleteTransaction: (String) -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     var selectedMonth by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
     var selectedYear by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
@@ -30,15 +33,37 @@ fun MainContainerScreen(
 
     val pagerState = rememberPagerState(pageCount = { 2 })
 
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        Surface(tonalElevation = 2.dp) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Olá, $userName",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Usamos background do esquema de cores para o cabeçalho "vazar" para a barra de status
+        Surface(
+            tonalElevation = 2.dp,
+            color = MaterialTheme.colorScheme.background // Mesma cor do fundo para efeito infinito
+        ) {
+            Column(
+                modifier = Modifier
+                    .statusBarsPadding() // Move o conteúdo para baixo do relógio, mas mantém o fundo da Surface lá
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Olá, $userName",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Sair",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -201,7 +226,9 @@ fun MonthYearPickerDialog(
             TextButton(onClick = { onConfirm(tempMonth, tempYear) }) { Text("OK") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = { onDismiss() }) {
+                Text("Cancelar")
+            }
         }
     )
 }

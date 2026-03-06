@@ -142,6 +142,12 @@ class MainActivity : FragmentActivity() {
                                 },
                                 onDeleteTransaction = { id ->
                                     viewModel.deleteTransaction(id) { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
+                                },
+                                onLogoutClick = {
+                                    viewModel.logout()
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(Screen.Main.route) { inclusive = true }
+                                    }
                                 }
                             )
                         }

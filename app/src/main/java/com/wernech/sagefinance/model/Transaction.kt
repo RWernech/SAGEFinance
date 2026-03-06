@@ -12,16 +12,24 @@ enum class TransactionType(val label: String) {
 
 enum class TransactionCategory(val label: String) {
     BILL("Conta"),
-    MARKET("Mercado"),
-    STREAMING("Streaming"),
+    PHARMACY("Farmácia"),
+    FINANCING("Financiamento"),
     LEISURE("Lazer"),
-    OTHERS("Outros")
+    TRANSPORT("Locomoção"),
+    MAINTENANCE("Manutenção"),
+    MARKET("Mercado"),
+    OTHERS("Outros"),
+    STREAMING("Streaming"),
+    VETERINARY("Veterinário")
 }
 
 enum class PaymentMethod(val label: String) {
-    PIX("Pix"),
     CREDIT("Crédito"),
-    DEBIT("Débito")
+    DEBIT("Débito"),
+    PIX("Pix"),
+    RECEIVED("Recebido"),
+    TRANSFER("Transferência"),
+    VR("VR")
 }
 
 @Entity(tableName = "transactions")
