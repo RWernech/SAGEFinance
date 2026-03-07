@@ -1,40 +1,66 @@
 # SAGE Finance 🦉💰
 
-**SAGE Finance** é um ecossistema financeiro multiplataforma para controle de gastos e gestão pessoal. O projeto conta com um aplicativo Android nativo e uma interface Web independente, ambos consumindo uma infraestrutura serverless na AWS.
+**SAGE Finance** é um ecossistema financeiro multiplataforma projetado para oferecer controle total sobre finanças pessoais com foco em segurança, portabilidade e performance. O ecossistema integra um aplicativo **Android Nativo**, uma interface **Web SPA** e um backend **Serverless** na nuvem AWS.
 
-## 🚀 Funcionalidades
+---
 
-- **Dashboard Financeiro**: Visão clara de Entradas, Saídas e Saldo total.
-- **Gráficos de Análise**: Visualização dinâmica de fluxos e distribuições.
-- **Gestão de Operações**: CRUD completo de transações sincronizado em tempo real.
-- **Segurança Avançada**: 
-    - Android: Autenticação Biométrica e DataStore.
-    - Web: Login seguro e interface responsiva.
-    - Backend: Hashing de senhas e proteção via API Key.
-- **Multiplataforma**: Acesse seus dados pelo celular ou pelo navegador.
+## 🏗️ Arquitetura do Sistema
+
+O projeto foi construído seguindo uma arquitetura moderna de microserviços e frontend independente:
+
+*   **Cérebro Único (Backend):** Uma infraestrutura robusta na AWS utilizando Lambdas (Python) e DynamoDB, expondo uma API segura via Function URL.
+*   **Android (Nativo):** App construído com Jetpack Compose, priorizando a experiência do usuário e sincronização offline (Single Source of Truth).
+*   **Web (SPA):** Dashboard responsivo em React.js para gestão desktop, sincronizado em tempo real com a nuvem.
+
+---
+
+## 🚀 Funcionalidades Principais
+
+-   **Dashboard Inteligente:** Visão consolidada de Entradas, Saídas, Investimentos e Saldo Real.
+-   **Análise Visual:** Gráficos dinâmicos de gastos por categoria e por método de pagamento (Operação).
+-   **Gestão de Operações:** CRUD completo de transações com suporte a múltiplas categorias e métodos de pagamento.
+-   **Sincronização Cloud:** Dados persistidos na AWS com suporte a modo offline no Android através de WorkManager e Room.
+-   **Comparativo de Performance:** Indicadores percentuais comparando o período atual com o anterior (Mês vs Mês).
+
+---
+
+## 🛡️ Segurança de Nível Profissional
+
+A segurança foi a prioridade máxima no desenvolvimento deste ecossistema:
+
+*   **Autenticação JWT (JSON Web Token):** Todas as comunicações entre os frontends e o backend são assinadas digitalmente, garantindo que o usuário só acesse seus próprios dados.
+*   **Criptografia de Senhas:** Armazenamento seguro utilizando Hashing **PBKDF2 com Salt** no banco de dados.
+*   **Segurança Biométrica (Android):** Acesso ao aplicativo protegido por impressão digital ou reconhecimento facial.
+*   **Armazenamento Criptografado:** Uso de `EncryptedSharedPreferences` no Android para proteger tokens e credenciais localmente.
+*   **Proteção de API:** Restrição de **CORS** por domínio e validação de **API Key** em todas as requisições.
+
+---
 
 ## 🛠️ Stack Tecnológica
 
-### Android (Frontend)
-- **Linguagem**: Kotlin
-- **Interface**: Jetpack Compose (Material 3)
-- **Rede**: Retrofit + OkHttp
-- **Segurança**: Biometric KTX
+### **Frontend & Mobile**
+| Tecnologia | Utilização |
+| :--- | :--- |
+| **Kotlin / Jetpack Compose** | UI Nativa Android Moderna |
+| **React.js / Vite** | Frontend Web de alta performance |
+| **TailwindCSS** | Estilização Web consistente |
+| **Retrofit / Axios** | Comunicação com API (Android / Web) |
+| **Room Database** | Persistência Local e cache no Android |
+| **Recharts** | Visualização de dados e gráficos na Web |
 
-### Web (Frontend) - NEW 🌐
-- **Framework**: React.js + Vite
-- **Estilização**: TailwindCSS
-- **Gráficos**: Recharts
-- **Deployment**: GitHub Pages (Independente do App Android)
+### **Cloud & Backend**
+| Tecnologia | Utilização |
+| :--- | :--- |
+| **AWS Lambda (Python)** | Lógica de negócio Serverless |
+| **Amazon DynamoDB** | Banco de dados NoSQL escalável |
+| **JWT (PyJWT)** | Autorização e autenticação segura |
+| **GitHub Pages** | Hospedagem automatizada da versão Web |
 
-### AWS (Backend) - Cérebro Único 🧠
-- **AWS Lambda**: Lógica de negócio em Python.
-- **DynamoDB**: Banco de dados NoSQL escalável.
-- **Function URL**: Endpoint seguro com suporte a CORS para Web e Android.
+---
 
 ## ⚙️ CI/CD
 
-O projeto utiliza **GitHub Actions** para gerar APKs de teste e **GitHub Pages** para hospedar a versão web automaticamente.
+O projeto utiliza **GitHub Actions** para automação de processos e **gh-pages** para deployment contínuo da interface web, garantindo que a versão em produção sempre reflita o código mais estável da branch master.
 
 ---
-Desenvolvido com foco em performance, segurança e onipresença. 🚀
+**Desenvolvido por [Rogerio Wernech](https://github.com/RWernech)** 🚀
