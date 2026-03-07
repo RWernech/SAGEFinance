@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://uqnedctqy444gt6kwb6a2cwahy0dlofz.lambda-url.sa-east-1.on.aws/';
+// URL sem a barra no final
+const API_BASE_URL = 'https://uqnedctqy444gt6kwb6a2cwahy0dlofz.lambda-url.sa-east-1.on.aws';
 const API_KEY = 'SAGE-FINANCE-7B9A2C4D-8E5F-4A1B-9C3D-6E2F8A0B1C3D';
 
 const api = axios.create({
@@ -12,11 +13,11 @@ const api = axios.create({
 });
 
 export const transactionApi = {
-  getTransactions: (email) => api.get(`/?userEmail=${email}`).then(res => res.data),
-  saveTransaction: (transaction) => api.post('/', transaction),
-  deleteTransaction: (id) => api.delete(`/?id=${id}`),
-  registerUser: (user) => api.post('/', { ...user, type: 'register' }), // Note: backend usually differentiates by fields or a type field
-  loginUser: (email, password) => api.post('/', { email, password, type: 'login' }).then(res => res.data),
+  // Removida a barra inicial nos métodos para não duplicar com a baseURL
+  getTransactions: (email) => api.get(`?userEmail=${email}`).then(res => res.data),
+  saveTransaction: (transaction) => api.post('', transaction).then(res => res.data),
+  deleteTransaction: (id) => api.delete(`?id=${id}`).then(res => res.data),
+  loginUser: (email, password) => api.post('', { email, password }).then(res => res.data),
 };
 
 export default api;

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 sealed class MainUiState {
     object Idle : MainUiState()
@@ -38,34 +39,37 @@ class MainViewModel(
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
     fun setAuthenticated(email: String, name: String) {
-        _currentUserEmail.value = email
+        val cleanEmail = email.lowercase(Locale.ROOT).trim()
+        _currentUserEmail.value = cleanEmail
         _currentUserName.value = name
         _isAuthenticated.value = true
-        loadTransactions(email)
+        loadTransactions(cleanEmail)
     }
 
     fun loadTransactions(email: String) {
+        val cleanEmail = email.lowercase(Locale.ROOT).trim()
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading
-            repository.getTransactions(email).collectLatest { transactions ->
+            repository.getTransactions(cleanEmail).collectLatest { transactions ->
                 _uiState.value = MainUiState.Success(transactions)
             }
         }
     }
 
     fun loginUser(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val cleanEmail = email.lowercase(Locale.ROOT).trim()
         viewModelScope.launch {
             try {
-                val credentials = mapOf("email" to email, "password" to password)
+                val credentials = mapOf("email" to cleanEmail, "password" to password)
                 val response = RetrofitClient.api.loginUser(credentials)
                 val name = response["name"] ?: "Usuário"
                 
-                userPreferences.saveSession(email, name)
-                _currentUserEmail.value = email
+                userPreferences.saveSession(cleanEmail, name)
+                _currentUserEmail.value = cleanEmail
                 _currentUserName.value = name
                 _isAuthenticated.value = true
                 
-                loadTransactions(email)
+                loadTransactions(cleanEmail)
                 onSuccess()
             } catch (e: Exception) {
                 onError("Erro ao realizar login")
@@ -74,9 +78,11 @@ class MainViewModel(
     }
 
     fun registerUser(user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val cleanEmail = user.email.lowercase(Locale.ROOT).trim()
+        val cleanUser = user.copy(email = cleanEmail)
         viewModelScope.launch {
             try {
-                RetrofitClient.api.registerUser(user)
+                RetrofitClient.api.registerUser(cleanUser)
                 onSuccess()
             } catch (e: Exception) {
                 onError("Erro ao cadastrar")
@@ -87,7 +93,9 @@ class MainViewModel(
     fun saveTransaction(transaction: Transaction, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                val transactionWithUser = transaction.copy(userEmail = _currentUserEmail.value)
+                // Aqui garantimos que o email existe ou usamos uma string vazia se der erro (o que não deve ocorrer logado)
+                val cleanEmail = _currentUserEmail.value?.lowercase(Locale.ROOT)?.trim() ?: ""
+                val transactionWithUser = transaction.copy(userEmail = cleanEmail)
                 repository.saveTransaction(transactionWithUser)
                 onSuccess()
             } catch (e: Exception) {
