@@ -8,16 +8,17 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
     private const val BASE_URL = "https://uqnedctqy444gt6kwb6a2cwahy0dlofz.lambda-url.sa-east-1.on.aws/"
-    
-    // Agora pegamos a chave direto do BuildConfig
     private val API_KEY = BuildConfig.API_KEY
+    
+    // Variável para armazenar o token JWT em memória após o login
+    private var authToken: String? = null
+
+    fun setToken(token: String?) {
+        authToken = token
+    }
 
     private val logging = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
-        } else {
-            HttpLoggingInterceptor.Level.NONE
-        }
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
     }
 
     private val client = OkHttpClient.Builder()
@@ -25,7 +26,11 @@ object RetrofitClient {
             val original = chain.request()
             val requestBuilder = original.newBuilder()
                 .header("x-api-key", API_KEY)
-                .method(original.method, original.body)
+            
+            // Se tivermos um token, adicionamos no cabeçalho Authorization
+            authToken?.let {
+                requestBuilder.header("Authorization", "Bearer $it")
+            }
             
             chain.proceed(requestBuilder.build())
         }

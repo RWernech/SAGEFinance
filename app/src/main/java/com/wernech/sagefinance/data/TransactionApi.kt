@@ -9,8 +9,9 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface TransactionApi {
+    // Com JWT, não precisamos mais passar o email na URL para GET e POST
     @GET("/")
-    suspend fun getTransactions(@Query("userEmail") email: String): List<Transaction>
+    suspend fun getTransactions(): List<Transaction>
 
     @POST("/")
     suspend fun saveTransaction(@Body transaction: Transaction)

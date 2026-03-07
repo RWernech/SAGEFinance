@@ -38,11 +38,15 @@ class MainViewModel(
     private val _isAuthenticated = MutableStateFlow(false)
     val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
-    fun setAuthenticated(email: String, name: String) {
+    fun setAuthenticated(email: String, name: String, token: String?) {
         val cleanEmail = email.lowercase(Locale.ROOT).trim()
         _currentUserEmail.value = cleanEmail
         _currentUserName.value = name
         _isAuthenticated.value = true
+        
+        // Configura o token no RetrofitClient para as próximas chamadas
+        RetrofitClient.setToken(token)
+        
         loadTransactions(cleanEmail)
     }
 
@@ -62,9 +66,14 @@ class MainViewModel(
             try {
                 val credentials = mapOf("email" to cleanEmail, "password" to password)
                 val response = RetrofitClient.api.loginUser(credentials)
-                val name = response["name"] ?: "Usuário"
                 
-                userPreferences.saveSession(cleanEmail, name)
+                val name = response["name"] ?: "Usuário"
+                val token = response["token"] // NOVO: Pega o token da Lambda
+                
+                // Configura o token no RetrofitClient imediatamente
+                RetrofitClient.setToken(token)
+                
+                userPreferences.saveSession(cleanEmail, name, token ?: "")
                 _currentUserEmail.value = cleanEmail
                 _currentUserName.value = name
                 _isAuthenticated.value = true
@@ -93,7 +102,6 @@ class MainViewModel(
     fun saveTransaction(transaction: Transaction, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                // Aqui garantimos que o email existe ou usamos uma string vazia se der erro (o que não deve ocorrer logado)
                 val cleanEmail = _currentUserEmail.value?.lowercase(Locale.ROOT)?.trim() ?: ""
                 val transactionWithUser = transaction.copy(userEmail = cleanEmail)
                 repository.saveTransaction(transactionWithUser)
@@ -118,6 +126,7 @@ class MainViewModel(
         viewModelScope.launch {
             repository.clearAll()
             userPreferences.clear()
+            RetrofitClient.setToken(null) // Limpa o token ao sair
             _currentUserEmail.value = null
             _currentUserName.value = null
             _isAuthenticated.value = false

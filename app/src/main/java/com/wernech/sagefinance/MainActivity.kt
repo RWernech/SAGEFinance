@@ -41,7 +41,6 @@ class MainActivity : FragmentActivity() {
         val database = AppDatabase.getDatabase(this)
         val repository = TransactionRepository(RetrofitClient.api, database.transactionDao())
 
-        // Dispara a sincronização em background toda vez que o app abre
         val syncConstraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -65,13 +64,14 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(Unit) {
                 val savedEmail = userPreferences.userEmail.first()
                 val savedName = userPreferences.userName.first()
+                val savedToken = userPreferences.userToken.first() // Recupera o Token salvo
                 
                 if (savedEmail != null && savedName != null) {
                     if (BiometricHelper.isBiometricAvailable(this@MainActivity)) {
                         BiometricHelper.showBiometricPrompt(
                             activity = this@MainActivity,
                             onSuccess = {
-                                viewModel.setAuthenticated(savedEmail, savedName)
+                                viewModel.setAuthenticated(savedEmail, savedName, savedToken)
                                 isCheckingAuth = false
                             },
                             onError = { error ->
@@ -80,7 +80,7 @@ class MainActivity : FragmentActivity() {
                             }
                         )
                     } else {
-                        viewModel.setAuthenticated(savedEmail, savedName)
+                        viewModel.setAuthenticated(savedEmail, savedName, savedToken)
                         isCheckingAuth = false
                     }
                 } else {
