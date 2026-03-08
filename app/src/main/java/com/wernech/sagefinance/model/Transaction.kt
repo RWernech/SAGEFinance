@@ -7,23 +7,29 @@ import java.util.UUID
 enum class TransactionType(val label: String) {
     INCOME("Entrada"),
     EXPENSE("Gasto/Saída"),
-    INVESTMENT("Investimento")
+    INVESTMENT("Investimento (Aporte)"),
+    INVESTMENT_RESCUE("Investimento (Resgate)")
 }
 
 enum class TransactionCategory(val label: String) {
+    FOOD("Alimentação"),
+    RENT("Aluguel"),
     BILL("Conta"),
     PHARMACY("Farmácia"),
     FINANCING("Financiamento"),
+    TAX("Imposto"),
     LEISURE("Lazer"),
     TRANSPORT("Locomoção"),
     MAINTENANCE("Manutenção"),
     MARKET("Mercado"),
     OTHERS("Outros"),
+    CLOTHES("Roupa"),
     STREAMING("Streaming"),
     VETERINARY("Veterinário")
 }
 
 enum class PaymentMethod(val label: String) {
+    BOLETO("Boleto"),
     CREDIT("Crédito"),
     DEBIT("Débito"),
     PIX("Pix"),
@@ -43,5 +49,5 @@ data class Transaction(
     val category: TransactionCategory,
     val paymentMethod: PaymentMethod,
     val userEmail: String? = null,
-    val isSynced: Boolean = true // Flag para controle de sincronização
+    val isSynced: Boolean = true
 )

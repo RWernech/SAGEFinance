@@ -43,13 +43,19 @@ fun TransactionListScreen(
     val summary = remember(filteredTransactions) {
         val income = filteredTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
         val expense = filteredTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-        val invested = filteredTransactions.filter { it.type == TransactionType.INVESTMENT }.sumOf { it.amount }
-        val balance = income - expense - invested
+        
+        // LÓGICA DE INVESTIMENTO LÍQUIDO: Aporte - Resgate
+        val totalAportes = filteredTransactions.filter { it.type == TransactionType.INVESTMENT }.sumOf { it.amount }
+        val totalResgates = filteredTransactions.filter { it.type == TransactionType.INVESTMENT_RESCUE }.sumOf { it.amount }
+        val netInvested = totalAportes - totalResgates
+        
+        // O Saldo considera: Entradas - Gastos - (O que sobrou travado em investimento)
+        val balance = income - expense - netInvested
         
         object {
             val totalIncome = income
             val totalExpense = expense
-            val totalInvested = invested
+            val totalInvested = netInvested
             val totalBalance = balance
         }
     }
@@ -106,6 +112,7 @@ fun TransactionItem(
     val amountColor = remember(transaction.type) {
         when (transaction.type) {
             TransactionType.INCOME -> Color(0xFF4CAF50)
+            TransactionType.INVESTMENT_RESCUE -> Color(0xFF4CAF50) // Verde (dinheiro volta pra conta)
             TransactionType.EXPENSE -> Color(0xFFF44336)
             TransactionType.INVESTMENT -> Color(0xFF2196F3)
         }
@@ -114,8 +121,9 @@ fun TransactionItem(
     val amountPrefix = remember(transaction.type) {
         when (transaction.type) {
             TransactionType.INCOME -> "+"
+            TransactionType.INVESTMENT_RESCUE -> "+" // Prefix + (saldo aumenta)
             TransactionType.EXPENSE -> "-"
-            TransactionType.INVESTMENT -> ""
+            TransactionType.INVESTMENT -> "-" // Prefix - (dinheiro sai da conta para o investimento)
         }
     }
 
@@ -152,7 +160,6 @@ fun TransactionItem(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
-                    // Ícone de "Não Sincronizado" se necessário
                     if (!transaction.isSynced) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
